@@ -205,7 +205,7 @@ fn save_events_to_db(events: Vec<EventInfo>) -> Result<()> {
     let db_user = env::var("DB_USER").expect("DB_USER must be set");
     let db_password = env::var("DB_PASSWORD").expect("DB_PASSWORD must be set");
     let db_name = env::var("DB_NAME").expect("DB_NAME must be set");
-    let db_socket = env::var("DB_SOCKET").ok(); // ソケットファイルはオプション
+    let db_socket = env::var("DB_SOCKET").ok();
 
     let opts = if let Some(socket) = db_socket {
         OptsBuilder::default()
@@ -215,7 +215,7 @@ fn save_events_to_db(events: Vec<EventInfo>) -> Result<()> {
             .socket(Some(socket))
     } else {
         let db_host = env::var("DB_HOST").expect("DB_HOST must be set");
-        let db_port = env::var("DB_PORT").unwrap_or_else(|_| "3306".to_string()); // デフォルトポートを設定
+        let db_port = env::var("DB_PORT").unwrap_or_else(|_| "3306".to_string());
         OptsBuilder::default()
             .ip_or_hostname(Some(db_host))
             .user(Some(db_user))
