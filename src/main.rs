@@ -10,6 +10,8 @@ fn main() {
             Err(e) => println!("scraper setup error: {:?}", e),
         }
     }
+
+    save_events_to_db(events).unwrap();
 }
 
 struct ChessEventScraperFactory;
@@ -185,4 +187,45 @@ fn print_event_list(title: &str, events: Vec<EventInfo>) {
         println!("  - fee: {:?}", e.fee);
     }
     println!("");
+}
+
+fn save_events_to_db(events: Vec<EventInfo>) -> Result<()> {
+    let db_user = env::var("DB_USER").expect("DB_USER must be set");
+    let db_password = env::var("DB_PASSWORD").expect("DB_PASSWORD must be set");
+    let db_name = env::var("DB_NAME").expect("DB_NAME must be set");
+    let db_socket = env::var("DB_SOCKET").ok();
+
+    let opts = if let Some(socket) = db_socket {
+        OptsBuilder::default()
+            .user(Some(db_user))
+            .pass(Some(db_password))
+            .db_name(Some(db_name))
+            .socket(Some(socket))
+    } else {
+        let db_host = env::var("DB_HOST").expect("DB_HOST must be set");
+        let db_port = env::var("DB_PORT").unwrap_or_else(|_| "3306".to_string());
+        OptsBuilder::default()
+            .ip_or_hostname(Some(db_host))
+            .user(Some(db_user))
+            .pass(Some(db_password))
+            .db_name(Some(db_name))
+            .tcp_port(db_port.parse().expect("DB_PORT must be a valid number"))
+    };
+
+    let pool = Pool::new(opts)?;
+    let mut conn = pool.get_conn()?;
+
+    for event in events {
+        conn.exec_drop(
+            r"INSERT INTO chess_event (date, open_time, revenue, fee)
+              VALUES (:date, :open_time, :revenue, :fee)",
+            params! {
+                "date" => event.date,
+                "open_time" => event.open_time,
+                "revenue" => event.revenue,
+                "fee" => event.fee,
+            },
+        )?;
+    }
+    Ok(())
 }
