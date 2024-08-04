@@ -1,17 +1,25 @@
-const CHESS_CLUB_LIST: [&str; 3] = ["club8x8", "kitasenjyu", "ncs"];
+const CHESS_CLUB_LIST: [&str; 3] = ["8x8_chess_club", "kitasenjyu", "ncs"];
 
 fn main() {
     println!("CHESS_CLUB_LIST: {:?}", CHESS_CLUB_LIST);
 
     let club8x8_scraper = ChessEventScraperFactory::create("8x8_chess_club");
-
     let events = club8x8_scraper.scrape_event();
+    println!("8x8");
     for e in events {
         println!("================ event ==============");
         println!("date: {:?}", e.date);
         println!("open_time: {:?}", e.open_time);
         println!("revenue: {:?}", e.revenue);
         println!("fee: {:?}", e.fee);
+    }
+
+    let kitasenjyu_scraper = ChessEventScraperFactory::create("kitasenjyu");
+    let events = kitasenjyu_scraper.scrape_event();
+    println!("kitasenjyu");
+    for e in events {
+        println!("================ event ==============");
+        println!("date: {:?}", e.date);
     }
 }
 
@@ -22,6 +30,7 @@ impl ChessEventScraperFactory {
         // TODO add other than 8x8 club scraper
         match keyword {
             "8x8_chess_club" => EventScraperClub8x8 {},
+            "kitasenjyu" => EventScraperKitasenjyu{},
             _ => panic!("Not supported keyword")  // FIXME Change to Result
         }
     }
@@ -37,6 +46,7 @@ impl ChessEventScraper for EventScraperClub8x8 {
     fn url() -> String{
         "https://8by8.hatenablog.com/".to_string()
     }
+
     fn scrape_event(&self) -> Vec<EventInfo> {
         let body = 
             reqwest::blocking::get(EventScraperClub8x8::url())
@@ -106,35 +116,20 @@ pub struct EventInfo {
     fee: String,
 }
 
-pub trait ChessClubScraper {
-    fn to_yaml(&self) -> String;
-    fn name(&self) -> &String;
-    fn url(&self) -> &String;
-    fn scrape_event(&self) -> Vec<EventInfo>;
-}
-
-// struct ChessClub8x8 {
-//     _name: String,
-//     _url: String,
-// }
-
-struct ChessClubKitaSenjyu {
-    _name: String,
-    _url: String,
-}
-
-impl ChessClubScraper for ChessClubKitaSenjyu {
-    fn to_yaml(&self) -> String {
-        "".to_string()
+struct EventScraperKitasenjyu;
+impl ChessEventScraper for EventScraperKitasenjyu {
+    fn url() -> String{
+        "https://8by8.hatenablog.com/".to_string()
     }
-    fn name(&self) -> &String {
-        &self._name
-    }
-    fn url(&self) -> &String {
-        &self._url
-    }
+
     fn scrape_event(&self) -> Vec<EventInfo> {
-        let body = reqwest::blocking::get(self.url()).unwrap().text().unwrap();
+        // FIXME: tentative mock implementation
+        let mut events = Vec::new();
+
+
+        let body = 
+            reqwest::blocking::get(EventScraperKitasenjyu.url())
+            .unwrap().text().unwrap();
         let document = scraper::Html::parse_document(&body);
 
         let scrape_target_selector = 
