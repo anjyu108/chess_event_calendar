@@ -1,6 +1,3 @@
-use yaml_rust::{Yaml, YamlLoader, YamlEmitter};
-use linked_hash_map::LinkedHashMap;
-
 const CHESS_CLUB_LIST: [&str; 3] = ["club8x8", "kitasenjyu", "ncs"];
 
 fn main() {
@@ -21,7 +18,7 @@ fn main() {
 struct ChessEventScraperFactory;
 
 impl ChessEventScraperFactory {
-    fn create(keyword: &str) -> impl ChessEventScraper {
+    fn create(_keyword: &str) -> impl ChessEventScraper {
         // TODO add other than 8x8 club scraper
         EventScraperClub8x8 {}
     }
@@ -109,10 +106,10 @@ pub trait ChessClub {
     fn scrape_event(&self) -> Vec<EventInfo>;
 }
 
-struct ChessClub8x8 {
-    _name: String,
-    _url: String,
-}
+// struct ChessClub8x8 {
+//     _name: String,
+//     _url: String,
+// }
 
 struct ChessClubKitaSenjyu {
     _name: String,
