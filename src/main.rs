@@ -226,6 +226,10 @@ fn print_event_list(title: &str, events: &Vec<EventInfo>) {
 
 fn save_events_to_db(events: Vec<EventInfo>) -> Result<(), Box<dyn std::error::Error>> {
     // TODO: Change events type to &XX
+
+    // TODO: don't panic even in error case
+    return Ok(());
+
     let db_user = env::var("DB_USER").expect("DB_USER must be set");
     let db_password = env::var("DB_PASSWORD").expect("DB_PASSWORD must be set");
     let db_name = env::var("DB_NAME").expect("DB_NAME must be set");
