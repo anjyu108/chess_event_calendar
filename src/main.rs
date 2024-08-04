@@ -18,9 +18,12 @@ fn main() {
 struct ChessEventScraperFactory;
 
 impl ChessEventScraperFactory {
-    fn create(_keyword: &str) -> impl ChessEventScraper {
+    fn create(keyword: &str) -> impl ChessEventScraper {
         // TODO add other than 8x8 club scraper
-        EventScraperClub8x8 {}
+        match keyword {
+            "8x8" => EventScraperClub8x8 {},
+            _ => panic!("Not supported keyword")  // FIXME Change to Result
+        }
     }
 }
 
@@ -99,7 +102,7 @@ pub struct EventInfo {
     fee: String,
 }
 
-pub trait ChessClub {
+pub trait ChessClubScraper {
     fn to_yaml(&self) -> String;
     fn name(&self) -> &String;
     fn url(&self) -> &String;
@@ -116,7 +119,7 @@ struct ChessClubKitaSenjyu {
     _url: String,
 }
 
-impl ChessClub for ChessClubKitaSenjyu {
+impl ChessClubScraper for ChessClubKitaSenjyu {
     fn to_yaml(&self) -> String {
         "".to_string()
     }
