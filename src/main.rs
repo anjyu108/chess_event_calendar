@@ -3,7 +3,7 @@ use std::env;
 use mysql::{params, OptsBuilder, Pool};
 use mysql::prelude::Queryable;
 
-const CHESS_CLUB_LIST: [&str; 2] = ["8x8_chess_club", "kitasenjyu"];
+const CHESS_CLUB_LIST: [&str; 3] = ["8x8_chess_club", "kitasenjyu", "JCF"];
 
 fn main() {
     println!("CHESS_CLUB_LIST: {:?}", CHESS_CLUB_LIST);
@@ -26,6 +26,8 @@ impl ChessEventScraperFactory {
                 Ok(Box::new(EventScraperClub8x8 {}) as Box<dyn ChessEventScraper>),
             "kitasenjyu" => 
                 Ok(Box::new(EventScraperKitasenjyu{}) as Box<dyn ChessEventScraper>),
+            "JCF" =>
+                Ok(Box::new(EventScraperJcf{}) as Box<dyn ChessEventScraper>),
             _ => Err("Not supported keyword")
         }
     }
@@ -162,6 +164,30 @@ impl ChessEventScraper for EventScraperKitasenjyu {
                 fee,
             };
             events.push(e);
+        }
+
+        events
+    }
+}
+
+struct EventScraperJcf;
+impl ChessEventScraper for EventScraperJcf {
+    fn scrape_event(&self) -> Vec<EventInfo> {
+        // NOTE: JCF's event page is separated foreach year
+        //       This is for 2024, and need to change on next year
+        let url = "https://japanchess.org/tournament2024-2/".to_string();
+        let body = 
+            reqwest::blocking::get(url).unwrap().text().unwrap();
+        let document = scraper::Html::parse_document(&body);
+
+        let scrape_target_selector = 
+            scraper::Selector::parse("p.class").unwrap();
+        let scrape_target_list = document.select(&scrape_target_selector);
+
+        let mut events = Vec::new();
+        for article in scrape_target_list {
+            let text = article.text().collect::<Vec<_>>().join("");
+            println!("text: {:?}", text)
         }
 
         events
