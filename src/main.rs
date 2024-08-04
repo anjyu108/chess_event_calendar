@@ -3,8 +3,10 @@ const CHESS_CLUB_LIST: [&str; 3] = ["8x8_chess_club", "kitasenjyu", "ncs"];
 fn main() {
     println!("CHESS_CLUB_LIST: {:?}", CHESS_CLUB_LIST);
 
+    // FIXME: unwrap()
+
     let club8x8_scraper = ChessEventScraperFactory::create("8x8_chess_club");
-    let events = club8x8_scraper.scrape_event();
+    let events = club8x8_scraper.unwrap().scrape_event();
     println!("8x8");
     for e in events {
         println!("================ event ==============");
@@ -15,7 +17,7 @@ fn main() {
     }
 
     let kitasenjyu_scraper = ChessEventScraperFactory::create("kitasenjyu");
-    let events = kitasenjyu_scraper.scrape_event();
+    let events = kitasenjyu_scraper.unwrap().scrape_event();
     println!("kitasenjyu");
     for e in events {
         println!("================ event ==============");
@@ -26,17 +28,14 @@ fn main() {
 struct ChessEventScraperFactory;
 
 impl ChessEventScraperFactory {
-    fn create(keyword: &str) -> impl ChessEventScraper {
-        // TODO Change return type to Result
+    fn create(keyword: &str) -> Result<Box<dyn ChessEventScraper>, &'static str> {
         match keyword {
             "8x8_chess_club" => 
-                Box::new(EventScraperClub8x8 {}) as Box<dyn ChessEventScraper>,
+                Ok(Box::new(EventScraperClub8x8 {}) as Box<dyn ChessEventScraper>),
             "kitasenjyu" => 
-                Box::new(EventScraperKitasenjyu{}) as Box<dyn ChessEventScraper>,
-            _ => panic!("Not supported keyword")  // FIXME Change to Result
-        };
-
-        return EventScraperClub8x8 {}
+                Ok(Box::new(EventScraperKitasenjyu{}) as Box<dyn ChessEventScraper>),
+            _ => Err("Not supported keyword")
+        }
     }
 }
 
