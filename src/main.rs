@@ -3,11 +3,12 @@ const CHESS_CLUB_LIST: [&str; 2] = ["8x8_chess_club", "kitasenjyu"];
 fn main() {
     println!("CHESS_CLUB_LIST: {:?}", CHESS_CLUB_LIST);
 
-    // FIXME: unwrap()
     for chess_club_keyword in CHESS_CLUB_LIST {
         let scraper = ChessEventScraperFactory::create(chess_club_keyword);
-        let events = scraper.unwrap().scrape_event();
-        print_event_list(chess_club_keyword, events);
+        match scraper {
+            Ok(s) => print_event_list(chess_club_keyword, s.scrape_event()),
+            Err(e) => println!("scraper setup error: {:?}", e),
+        }
     }
 }
 
