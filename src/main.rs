@@ -1,30 +1,13 @@
-const CHESS_CLUB_LIST: [&str; 3] = ["8x8_chess_club", "kitasenjyu", "ncs"];
+const CHESS_CLUB_LIST: [&str; 2] = ["8x8_chess_club", "kitasenjyu"];
 
 fn main() {
     println!("CHESS_CLUB_LIST: {:?}", CHESS_CLUB_LIST);
 
     // FIXME: unwrap()
-
-    let club8x8_scraper = ChessEventScraperFactory::create("8x8_chess_club");
-    let events = club8x8_scraper.unwrap().scrape_event();
-    println!("8x8");
-    for e in events {
-        println!("================ event ==============");
-        println!("date: {:?}", e.date);
-        println!("open_time: {:?}", e.open_time);
-        println!("revenue: {:?}", e.revenue);
-        println!("fee: {:?}", e.fee);
-    }
-
-    let kitasenjyu_scraper = ChessEventScraperFactory::create("kitasenjyu");
-    let events = kitasenjyu_scraper.unwrap().scrape_event();
-    println!("kitasenjyu");
-    for e in events {
-        println!("================ event ==============");
-        println!("date: {:?}", e.date);
-        println!("open_time: {:?}", e.open_time);
-        println!("revenue: {:?}", e.revenue);
-        println!("fee: {:?}", e.fee);
+    for chess_club_keyword in CHESS_CLUB_LIST {
+        let scraper = ChessEventScraperFactory::create(chess_club_keyword);
+        let events = scraper.unwrap().scrape_event();
+        print_event_list(chess_club_keyword, events);
     }
 }
 
@@ -121,7 +104,6 @@ pub struct EventInfo {
 struct EventScraperKitasenjyu;
 impl ChessEventScraper for EventScraperKitasenjyu {
     fn scrape_event(&self) -> Vec<EventInfo> {
-        println!("======This is EventScraperKitasenjyu=======");
         let url = "http://chess.m1.valueserver.jp/".to_string();
         let charset = "Shift_JIS";  // need to manually set charset
         let body = 
@@ -190,4 +172,16 @@ fn trim_left(text: &str, patterns: Vec<String>) -> String {
     }
 
     String::from(ret)
+}
+
+fn print_event_list(title: &str, events: Vec<EventInfo>) {
+    println!("============ {:?} ============", title);
+    for e in events {
+        println!("event");
+        println!("  - date: {:?}", e.date);
+        println!("  - open_time: {:?}", e.open_time);
+        println!("  - revenue: {:?}", e.revenue);
+        println!("  - fee: {:?}", e.fee);
+    }
+    println!("");
 }
