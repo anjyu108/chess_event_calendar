@@ -88,7 +88,9 @@ impl ChessEventScraper for EventScraperClub8x8 {
                 continue;
             }
 
+            let name = "meeting".to_string();  // Assume all events are meeting
             let e = EventInfo {
+                name,
                 date,
                 open_time,
                 revenue,
@@ -103,6 +105,7 @@ impl ChessEventScraper for EventScraperClub8x8 {
 
 
 pub struct EventInfo {
+    name: String,
     date: String,
     open_time: String,
     revenue: String,
@@ -157,7 +160,9 @@ impl ChessEventScraper for EventScraperKitasenjyu {
                 continue;
             }
 
+            let name = "meeting".to_string();  // Assume all events are meeting
             let e = EventInfo {
+                name,
                 date,
                 open_time,
                 revenue,
@@ -181,13 +186,44 @@ impl ChessEventScraper for EventScraperJcf {
         let document = scraper::Html::parse_document(&body);
 
         let scrape_target_selector = 
-            scraper::Selector::parse("p.class").unwrap();
+            scraper::Selector::parse("div.TournamentBox").unwrap();
         let scrape_target_list = document.select(&scrape_target_selector);
+        let paragraph_selector = scraper::Selector::parse("div").unwrap();
 
         let mut events = Vec::new();
         for article in scrape_target_list {
-            let text = article.text().collect::<Vec<_>>().join("");
-            println!("text: {:?}", text)
+            // let text = article.text().collect::<Vec<_>>().join("");
+            println!("------article------");
+            // println!("text: {:?}", text);
+
+            let mut date = String::from("");
+            let mut name = String::from("");
+            for paragraph in article.select(&paragraph_selector) {
+                println!("------paragraph------");
+                let text = paragraph.text().collect::<Vec<_>>().join("");
+                println!("text: {:?}", text);
+                let attr_class = paragraph.value().attr("class").unwrap_or("");
+                println!("attr_class: {:?}", attr_class);
+
+                if attr_class == "tournamentname" {
+                    name = String::from(&text);
+                }
+                if attr_class == "gamedate" {
+                     date = String::from(&text);
+                }
+            }
+
+            let open_time = "unknown".to_string();
+            let revenue = "unknown".to_string();
+            let fee = "unknown".to_string();
+            let e = EventInfo {
+                name,
+                date,
+                open_time,
+                revenue,
+                fee,
+            };
+            events.push(e);
         }
 
         events
@@ -216,6 +252,7 @@ fn print_event_list(title: &str, events: &Vec<EventInfo>) {
     println!("============ {:?} ============", title);
     for e in events {
         println!("event");
+        println!("  - name: {:?}", e.name);
         println!("  - date: {:?}", e.date);
         println!("  - open_time: {:?}", e.open_time);
         println!("  - revenue: {:?}", e.revenue);
