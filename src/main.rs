@@ -3,7 +3,7 @@ const CHESS_CLUB_LIST: [&str; 3] = ["club8x8", "kitasenjyu", "ncs"];
 fn main() {
     println!("CHESS_CLUB_LIST: {:?}", CHESS_CLUB_LIST);
 
-    let club8x8_scraper = ChessEventScraperFactory::create("club8x8");
+    let club8x8_scraper = ChessEventScraperFactory::create("8x8_chess_club");
 
     let events = club8x8_scraper.scrape_event();
     for e in events {
@@ -21,7 +21,7 @@ impl ChessEventScraperFactory {
     fn create(keyword: &str) -> impl ChessEventScraper {
         // TODO add other than 8x8 club scraper
         match keyword {
-            "8x8" => EventScraperClub8x8 {},
+            "8x8_chess_club" => EventScraperClub8x8 {},
             _ => panic!("Not supported keyword")  // FIXME Change to Result
         }
     }
@@ -38,23 +38,26 @@ impl ChessEventScraper for EventScraperClub8x8 {
         "https://8by8.hatenablog.com/".to_string()
     }
     fn scrape_event(&self) -> Vec<EventInfo> {
-        let body = reqwest::blocking::get(EventScraperClub8x8::url()).unwrap().text().unwrap();
+        let body = 
+            reqwest::blocking::get(EventScraperClub8x8::url())
+            .unwrap().text().unwrap();
         let document = scraper::Html::parse_document(&body);
 
-        let div_selector = scraper::Selector::parse("article").unwrap();
-        let div_elements = document.select(&div_selector);
-        let p_selector = scraper::Selector::parse("p").unwrap();
+        let scrape_target_selector = 
+            scraper::Selector::parse("article").unwrap();
+        let scrape_target_list = document.select(&scrape_target_selector);
+        let paragraph_selector = scraper::Selector::parse("p").unwrap();
 
         let mut events = Vec::new();
-        for div in div_elements {
+        for article in scrape_target_list {
             let mut date = String::from("");
             let mut open_time = String::from("");
             let mut revenue = String::from("");
             let mut fee = String::from("");
             // ================ article ==============
-            for e in div.select(&p_selector) {
-                // println!("yaxu 4, {:?}", div);
-                let text = e.text().collect::<Vec<_>>().join("");
+            for paragraph in article.select(&paragraph_selector) {
+                // TODO: Fix these duplicated code
+                let text = paragraph.text().collect::<Vec<_>>().join("");
                 if text.contains("場所:") {
                     revenue = String::from(text.trim().trim_start_matches("場所:").trim());
                 }
@@ -74,6 +77,7 @@ impl ChessEventScraper for EventScraperClub8x8 {
                 }
             }
 
+            // not or not well structured event
             if date == "" ||
                open_time == "" ||
                revenue == "" ||
@@ -133,18 +137,19 @@ impl ChessClubScraper for ChessClubKitaSenjyu {
         let body = reqwest::blocking::get(self.url()).unwrap().text().unwrap();
         let document = scraper::Html::parse_document(&body);
 
-        let div_selector = scraper::Selector::parse("div.entry-content").unwrap();
-        let div_elements = document.select(&div_selector);
-        let p_selector = scraper::Selector::parse("p").unwrap();
+        let scrape_target_selector = 
+            scraper::Selector::parse("article.entry-content").unwrap();
+        let scrape_target_list = document.select(&scrape_target_selector);
+        let paragraph_selector = scraper::Selector::parse("p").unwrap();
 
         let mut events = Vec::new();
-        for div in div_elements {
+        for article in scrape_target_list {
             // log::info!("================");
             let mut date = String::from("");
             let mut open_time = String::from("");
             let mut revenue = String::from("");
             let mut fee = String::from("");
-            for e in div.select(&p_selector) {
+            for e in article.select(&paragraph_selector) {
                 let text = e.text().collect::<Vec<_>>().join("");
                 // log::info!("text: {:?}", text);
 
