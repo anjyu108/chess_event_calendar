@@ -27,29 +27,29 @@ struct ChessEventScraperFactory;
 
 impl ChessEventScraperFactory {
     fn create(keyword: &str) -> impl ChessEventScraper {
-        // TODO add other than 8x8 club scraper
+        // TODO Change return type to Result
         match keyword {
-            "8x8_chess_club" => EventScraperClub8x8 {},
-            "kitasenjyu" => EventScraperKitasenjyu{},
+            "8x8_chess_club" => 
+                Box::new(EventScraperClub8x8 {}) as Box<dyn ChessEventScraper>,
+            "kitasenjyu" => 
+                Box::new(EventScraperKitasenjyu{}) as Box<dyn ChessEventScraper>,
             _ => panic!("Not supported keyword")  // FIXME Change to Result
-        }
+        };
+
+        return EventScraperClub8x8 {}
     }
 }
 
 trait ChessEventScraper {
-    fn url() -> String;
     fn scrape_event(&self) -> Vec<EventInfo>;
 }
 
 struct EventScraperClub8x8;
 impl ChessEventScraper for EventScraperClub8x8 {
-    fn url() -> String{
-        "https://8by8.hatenablog.com/".to_string()
-    }
-
     fn scrape_event(&self) -> Vec<EventInfo> {
+        let url = "https://8by8.hatenablog.com/".to_string();
         let body = 
-            reqwest::blocking::get(EventScraperClub8x8::url())
+            reqwest::blocking::get(url)
             .unwrap().text().unwrap();
         let document = scraper::Html::parse_document(&body);
 
@@ -118,17 +118,14 @@ pub struct EventInfo {
 
 struct EventScraperKitasenjyu;
 impl ChessEventScraper for EventScraperKitasenjyu {
-    fn url() -> String{
-        "https://8by8.hatenablog.com/".to_string()
-    }
-
     fn scrape_event(&self) -> Vec<EventInfo> {
+        let url = "https://8by8.hatenablog.com/".to_string();
         // FIXME: tentative mock implementation
-        let mut events = Vec::new();
+        let mut events: Vec<EventInfo> = Vec::new();
 
 
         let body = 
-            reqwest::blocking::get(EventScraperKitasenjyu.url())
+            reqwest::blocking::get(url)
             .unwrap().text().unwrap();
         let document = scraper::Html::parse_document(&body);
 
