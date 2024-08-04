@@ -1,3 +1,8 @@
+use std::env;
+
+use mysql::{params, OptsBuilder, Pool};
+use mysql::prelude::Queryable;
+
 const CHESS_CLUB_LIST: [&str; 2] = ["8x8_chess_club", "kitasenjyu"];
 
 fn main() {
@@ -6,12 +11,10 @@ fn main() {
     for chess_club_keyword in CHESS_CLUB_LIST {
         let scraper = ChessEventScraperFactory::create(chess_club_keyword);
         match scraper {
-            Ok(s) => print_event_list(chess_club_keyword, s.scrape_event()),
+            Ok(s) => output_event_list(chess_club_keyword, s.scrape_event()),
             Err(e) => println!("scraper setup error: {:?}", e),
         }
     }
-
-    save_events_to_db(events).unwrap();
 }
 
 struct ChessEventScraperFactory;
@@ -177,7 +180,13 @@ fn trim_left(text: &str, patterns: Vec<String>) -> String {
     String::from(ret)
 }
 
-fn print_event_list(title: &str, events: Vec<EventInfo>) {
+
+fn output_event_list(title: &str, events: Vec<EventInfo>) {
+    print_event_list(title, &events);
+    let _ = save_events_to_db(events);
+}
+
+fn print_event_list(title: &str, events: &Vec<EventInfo>) {
     println!("============ {:?} ============", title);
     for e in events {
         println!("event");
@@ -189,7 +198,8 @@ fn print_event_list(title: &str, events: Vec<EventInfo>) {
     println!("");
 }
 
-fn save_events_to_db(events: Vec<EventInfo>) -> Result<()> {
+fn save_events_to_db(events: Vec<EventInfo>) -> Result<(), Box<dyn std::error::Error>> {
+    // TODO: Change events type to &XX
     let db_user = env::var("DB_USER").expect("DB_USER must be set");
     let db_password = env::var("DB_PASSWORD").expect("DB_PASSWORD must be set");
     let db_name = env::var("DB_NAME").expect("DB_NAME must be set");
