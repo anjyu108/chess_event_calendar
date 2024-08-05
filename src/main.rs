@@ -1,5 +1,7 @@
 use std::env;
 
+use chrono::NaiveDate;
+
 use mysql::{params, OptsBuilder, Pool};
 use mysql::prelude::Queryable;
 
@@ -87,6 +89,9 @@ impl ChessEventScraper for EventScraperClub8x8 {
                fee == "" {
                 continue;
             }
+
+            let naive_date = naive_date_from_str(&date);
+            println!("naive_date: {:?}", naive_date);
 
             let name = "meeting".to_string();  // Assume all events are meeting
             let e = EventInfo {
@@ -192,18 +197,11 @@ impl ChessEventScraper for EventScraperJcf {
 
         let mut events = Vec::new();
         for article in scrape_target_list {
-            // let text = article.text().collect::<Vec<_>>().join("");
-            println!("------article------");
-            // println!("text: {:?}", text);
-
             let mut date = String::from("");
             let mut name = String::from("");
             for paragraph in article.select(&paragraph_selector) {
-                println!("------paragraph------");
                 let text = paragraph.text().collect::<Vec<_>>().join("");
-                println!("text: {:?}", text);
                 let attr_class = paragraph.value().attr("class").unwrap_or("");
-                println!("attr_class: {:?}", attr_class);
 
                 if attr_class == "tournamentname" {
                     name = String::from(&text);
@@ -242,6 +240,28 @@ fn trim_left(text: &str, patterns: Vec<String>) -> String {
     String::from(ret)
 }
 
+fn naive_date_from_str(input: &str) -> NaiveDate {
+    // TODO: parametarize split keyword
+
+    let input = trim_left(&input, Vec::from([String::from("日")]));
+
+    let year_split: Vec<&str> = input.split("年").collect();
+    let year_str = year_split[0];
+    let year_int: i32 = year_str.parse().unwrap_or(1995);
+
+    let month_split: Vec<&str> = year_split[1].split("月").collect();
+    let month_str = month_split[0];
+    let month_int: u32 = month_str.parse().unwrap_or(10);
+
+    let day_split: Vec<&str> = month_split[1].split("月").collect();
+    let day_str = day_split[0];
+    let day_int: u32 = day_str.parse().unwrap_or(5);
+
+    let datetime = NaiveDate::from_ymd_opt(year_int, month_int, day_int);
+
+    // FIXME don't use unwrap()
+    datetime.unwrap()
+}
 
 fn output_event_list(title: &str, events: Vec<EventInfo>) {
     print_event_list(title, &events);
