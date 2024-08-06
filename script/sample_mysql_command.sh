@@ -11,7 +11,7 @@ mysql \
   -u root \
   --password="${password}" \
   -h 127.0.0.1 \
-  -e "CREATE DATABASE IF NOT EXISTS ${DATABSE_NAME}; SHOW DATABASES;"
+  -e "CREATE DATABASE IF NOT EXISTS ${DATABSE_NAME} default character set utf8; SHOW DATABASES;"
 
 mysql \
   -u root \
