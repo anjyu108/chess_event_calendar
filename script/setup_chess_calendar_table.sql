@@ -1,4 +1,3 @@
-/* FIXME: normalize this table */
 CREATE TABLE IF NOT EXISTS chess_event (
   name CHAR(100) NOT NULL,
   organizer CHAR(100) NOT NULL,
