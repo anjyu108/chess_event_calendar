@@ -5,7 +5,11 @@ use chrono::NaiveDate;
 use mysql::{params, OptsBuilder, Pool};
 use mysql::prelude::Queryable;
 
+use unicode_normalization::UnicodeNormalization;
+
 const CHESS_CLUB_LIST: [&str; 3] = ["8x8_chess_club", "kitasenjyu", "JCF"];
+
+// TODO: add logger for debug
 
 fn main() {
     println!("CHESS_CLUB_LIST: {:?}", CHESS_CLUB_LIST);
@@ -91,7 +95,7 @@ impl ChessEventScraper for EventScraperClub8x8 {
             }
 
             let naive_date = EventScraperClub8x8::naive_date_from_str(&date);
-            println!("naive_date: {:?}", naive_date);
+            println!("8x8 naive_date: {:?}", naive_date);
 
             let name = "meeting".to_string();  // Assume all events are meeting
             let e = EventInfo {
@@ -110,11 +114,14 @@ impl ChessEventScraper for EventScraperClub8x8 {
 
 impl EventScraperClub8x8 {
     fn naive_date_from_str(input: &str) -> NaiveDate {
-        // TODO: parametarize split keyword
+        // input example: "2024年1月7日(日)"
 
-        let input = trim_left(&input, Vec::from([String::from("日")]));
+        // normalize input as much as possible (e.g., Zenkaku)
+        let input_nfkd = input.nfkd().collect::<String>();
 
-        let year_split: Vec<&str> = input.split("年").collect();
+        let only_ymd = trim_left(&input_nfkd, Vec::from([String::from("日")]));
+
+        let year_split: Vec<&str> = only_ymd.split("年").collect();
         let year_str = year_split[0];
         let year_int: i32 = year_str.parse().unwrap_or(1995);
 
@@ -190,6 +197,9 @@ impl ChessEventScraper for EventScraperKitasenjyu {
                 continue;
             }
 
+            let naive_date = EventScraperKitasenjyu::naive_date_from_str(&date);
+            println!("Kitasenjyu naive_date: {:?}", naive_date);
+
             let name = "meeting".to_string();  // Assume all events are meeting
             let e = EventInfo {
                 name,
@@ -202,6 +212,31 @@ impl ChessEventScraper for EventScraperKitasenjyu {
         }
 
         events
+    }
+}
+
+impl EventScraperKitasenjyu {
+    fn naive_date_from_str(input: &str) -> NaiveDate {
+        // input example: "７／２７（土）"
+
+        // normalize input as much as possible (e.g., Zenkaku)
+        let input_nfkd = input.nfkd().collect::<String>();
+
+        let only_md = trim_left(&input_nfkd, Vec::from([String::from("(")]));
+
+        let year_int = 2024;  // assume it's 2024 year
+
+        let month_split: Vec<&str> = only_md.split("/").collect();
+        let month_str = month_split[0];
+        let month_int: u32 = month_str.parse().unwrap_or(10);
+
+        let day_str = month_split[1];
+        let day_int: u32 = day_str.parse().unwrap_or(5);
+
+        let datetime = NaiveDate::from_ymd_opt(year_int, month_int, day_int);
+
+        // FIXME don't use unwrap()
+        datetime.unwrap()
     }
 }
 
