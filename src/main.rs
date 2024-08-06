@@ -377,7 +377,7 @@ fn trim_left(text: &str, patterns: Vec<String>) -> String {
 
 fn output_event_list(title: &str, events: Vec<EventInfo>) {
     print_event_list(title, &events);
-    let ret = save_events_to_db(events);
+    let ret = save_events_to_db(&events);
     match ret {
         Ok(_) => (),
         Err(e) => println!("DB save Error: {:?}", e),
@@ -398,9 +398,7 @@ fn print_event_list(title: &str, events: &Vec<EventInfo>) {
     println!("");
 }
 
-fn save_events_to_db(events: Vec<EventInfo>) -> Result<(), &'static str> {
-    // TODO: Change events type to &XX
-
+fn save_events_to_db(events: &Vec<EventInfo>) -> Result<(), &'static str> {
     let db_user = env::var("DB_USER").unwrap_or("DB_USER not set".to_string());
     let db_password = env::var("DB_PASSWORD").unwrap_or("DB_PASSWORD not set".to_string());
     let db_name = env::var("DB_NAME").unwrap_or("DB_NAME not set".to_string());
@@ -445,9 +443,9 @@ fn save_events_to_db(events: Vec<EventInfo>) -> Result<(), &'static str> {
             params! {
                 "start_date" => event.start_date,
                 "end_date" => event.end_date,
-                "open_time" => event.open_time,
-                "revenue" => event.revenue,
-                "fee" => event.fee,
+                "open_time" => event.open_time.to_string(),
+                "revenue" => event.revenue.to_string(),
+                "fee" => event.fee.to_string(),
             },
         );
     }
