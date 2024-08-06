@@ -379,7 +379,7 @@ fn output_event_list(title: &str, events: Vec<EventInfo>) {
     print_event_list(title, &events);
     let ret = save_events_to_db(&events);
     match ret {
-        Ok(_) => (),
+        Ok(_) => println!("DB save OK"),
         Err(e) => println!("DB save Error: {:?}", e),
     }
 }
@@ -436,18 +436,23 @@ fn save_events_to_db(events: &Vec<EventInfo>) -> Result<(), &'static str> {
     let mut conn = pool.get_conn().unwrap();
 
     for event in events {
-        // TODO: add error handling
-        let _ = conn.exec_drop(
-            r"INSERT INTO chess_event (date, open_time, revenue, fee)
-              VALUES (:date, :open_time, :revenue, :fee)",
+        let ret = conn.exec_drop(
+            r"INSERT INTO chess_event (name, start_date, end_date, open_time, revenue, fee)
+              VALUES (:name, :start_date, :end_date, :open_time, :revenue, :fee)",
             params! {
-                "start_date" => event.start_date,
-                "end_date" => event.end_date,
+                "name" => event.name.to_string(),
+                "start_date" => event.start_date.format("%Y/%m/%d").to_string(),
+                "end_date" => event.end_date.format("%Y/%m/%d").to_string(),
                 "open_time" => event.open_time.to_string(),
                 "revenue" => event.revenue.to_string(),
                 "fee" => event.fee.to_string(),
             },
         );
+        // TODO: return Err when failed
+        match ret {
+            Ok(_) => (),
+            Err(e) => println!("Failed to insert event insert into DB: {:?}", e),
+        };
     }
     Ok(())
 }
