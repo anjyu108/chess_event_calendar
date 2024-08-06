@@ -97,10 +97,12 @@ impl ChessEventScraper for EventScraperClub8x8 {
             }
 
             let name = "meeting".to_string();  // Assume all events are meeting
+            let organizer = "8x8 chess club".to_string();
             let start_date = date;
             let end_date = date;
             let e = EventInfo {
                 name,
+                organizer,
                 start_date,
                 end_date,
                 open_time,
@@ -146,6 +148,7 @@ impl EventScraperClub8x8 {
 
 pub struct EventInfo {
     name: String,
+    organizer: String,
     start_date: NaiveDate,
     end_date: NaiveDate,
     open_time: String,
@@ -203,10 +206,12 @@ impl ChessEventScraper for EventScraperKitasenjyu {
             }
 
             let name = "meeting".to_string();  // Assume all events are meeting
+            let organizer = "kita-senjyu chess club".to_string();
             let start_date = date;
             let end_date = date;
             let e = EventInfo {
                 name,
+                organizer,
                 start_date,
                 end_date,
                 open_time,
@@ -300,10 +305,12 @@ impl ChessEventScraper for EventScraperJcf {
             }
 
             let open_time = "unknown".to_string();
+            let organizer = "Japan Chess Federation".to_string();
             let revenue = "unknown".to_string();
             let fee = "unknown".to_string();
             let e = EventInfo {
                 name,
+                organizer,
                 start_date,
                 end_date,
                 open_time,
@@ -389,6 +396,7 @@ fn print_event_list(title: &str, events: &Vec<EventInfo>) {
     for e in events {
         println!("event");
         println!("  - name: {:?}", e.name);
+        println!("  - organizer: {:?}", e.organizer);
         println!("  - start_date: {:?}", e.start_date);
         println!("  - end_date: {:?}", e.end_date);
         println!("  - open_time: {:?}", e.open_time);
@@ -437,10 +445,11 @@ fn save_events_to_db(events: &Vec<EventInfo>) -> Result<(), &'static str> {
 
     for event in events {
         let ret = conn.exec_drop(
-            r"INSERT INTO chess_event (name, start_date, end_date, open_time, revenue, fee)
-              VALUES (:name, :start_date, :end_date, :open_time, :revenue, :fee)",
+            r"INSERT INTO chess_event (name, organizer, start_date, end_date, open_time, revenue, fee)
+              VALUES (:name, :organizer, :start_date, :end_date, :open_time, :revenue, :fee)",
             params! {
                 "name" => event.name.to_string(),
+                "organizer" => event.organizer.to_string(),
                 "start_date" => event.start_date.format("%Y/%m/%d").to_string(),
                 "end_date" => event.end_date.format("%Y/%m/%d").to_string(),
                 "open_time" => event.open_time.to_string(),
