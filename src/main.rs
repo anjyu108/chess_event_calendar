@@ -377,7 +377,11 @@ fn trim_left(text: &str, patterns: Vec<String>) -> String {
 
 fn output_event_list(title: &str, events: Vec<EventInfo>) {
     print_event_list(title, &events);
-    let _ = save_events_to_db(events);
+    let ret = save_events_to_db(events);
+    match ret {
+        Ok(_) => (),
+        Err(e) => println!("DB save Error: {:?}", e),
+    }
 }
 
 fn print_event_list(title: &str, events: &Vec<EventInfo>) {
@@ -394,16 +398,21 @@ fn print_event_list(title: &str, events: &Vec<EventInfo>) {
     println!("");
 }
 
-fn save_events_to_db(events: Vec<EventInfo>) -> Result<(), Box<dyn std::error::Error>> {
+fn save_events_to_db(events: Vec<EventInfo>) -> Result<(), &'static str> {
     // TODO: Change events type to &XX
 
-    // TODO: don't panic even in error case
-    return Ok(());
-
-    let db_user = env::var("DB_USER").expect("DB_USER must be set");
-    let db_password = env::var("DB_PASSWORD").expect("DB_PASSWORD must be set");
-    let db_name = env::var("DB_NAME").expect("DB_NAME must be set");
+    let db_user = env::var("DB_USER").unwrap_or("DB_USER not set".to_string());
+    let db_password = env::var("DB_PASSWORD").unwrap_or("DB_PASSWORD not set".to_string());
+    let db_name = env::var("DB_NAME").unwrap_or("DB_NAME not set".to_string());
     let db_socket = env::var("DB_SOCKET").ok();
+
+    // TODO: refactor this error handling shit code
+    if db_user == "DB_USER not set" ||
+       db_password == "DB_PASSWORD not set" ||
+       db_name == "DB_NAME not set" {
+           return Err("DB param environ not set")
+    }
+
 
     let opts = if let Some(socket) = db_socket {
         OptsBuilder::default()
@@ -412,6 +421,7 @@ fn save_events_to_db(events: Vec<EventInfo>) -> Result<(), Box<dyn std::error::E
             .db_name(Some(db_name))
             .socket(Some(socket))
     } else {
+        // TODO add error handling for these environ
         let db_host = env::var("DB_HOST").expect("DB_HOST must be set");
         let db_port = env::var("DB_PORT").unwrap_or_else(|_| "3306".to_string());
         OptsBuilder::default()
@@ -422,11 +432,14 @@ fn save_events_to_db(events: Vec<EventInfo>) -> Result<(), Box<dyn std::error::E
             .tcp_port(db_port.parse().expect("DB_PORT must be a valid number"))
     };
 
-    let pool = Pool::new(opts)?;
-    let mut conn = pool.get_conn()?;
+    // let pool = Pool::new(opts).unwrap_or(return Err("DB opt parse failed"));
+    // let mut conn = pool.get_conn().unwrap_or(return Err("DB connect failed"));
+    let pool = Pool::new(opts).unwrap();
+    let mut conn = pool.get_conn().unwrap();
 
     for event in events {
-        conn.exec_drop(
+        // TODO: add error handling
+        let _ = conn.exec_drop(
             r"INSERT INTO chess_event (date, open_time, revenue, fee)
               VALUES (:date, :open_time, :revenue, :fee)",
             params! {
@@ -436,7 +449,7 @@ fn save_events_to_db(events: Vec<EventInfo>) -> Result<(), Box<dyn std::error::E
                 "revenue" => event.revenue,
                 "fee" => event.fee,
             },
-        )?;
+        );
     }
     Ok(())
 }
