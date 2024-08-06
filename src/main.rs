@@ -96,9 +96,12 @@ impl ChessEventScraper for EventScraperClub8x8 {
             }
 
             let name = "meeting".to_string();  // Assume all events are meeting
+            let start_date = date;
+            let end_date = date;
             let e = EventInfo {
                 name,
-                date,
+                start_date,
+                end_date,
                 open_time,
                 revenue,
                 fee,
@@ -141,7 +144,8 @@ impl EventScraperClub8x8 {
 
 pub struct EventInfo {
     name: String,
-    date: NaiveDate,
+    start_date: NaiveDate,
+    end_date: NaiveDate,
     open_time: String,
     revenue: String,
     fee: String,
@@ -197,9 +201,12 @@ impl ChessEventScraper for EventScraperKitasenjyu {
             }
 
             let name = "meeting".to_string();  // Assume all events are meeting
+            let start_date = date;
+            let end_date = date;
             let e = EventInfo {
                 name,
-                date,
+                start_date,
+                end_date,
                 open_time,
                 revenue,
                 fee,
@@ -277,9 +284,12 @@ impl ChessEventScraper for EventScraperJcf {
             let open_time = "unknown".to_string();
             let revenue = "unknown".to_string();
             let fee = "unknown".to_string();
+            let start_date = date;
+            let end_date = date;
             let e = EventInfo {
                 name,
-                date,
+                start_date,
+                end_date,
                 open_time,
                 revenue,
                 fee,
@@ -342,7 +352,8 @@ fn print_event_list(title: &str, events: &Vec<EventInfo>) {
     for e in events {
         println!("event");
         println!("  - name: {:?}", e.name);
-        println!("  - date: {:?}", e.date);
+        println!("  - start_date: {:?}", e.start_date);
+        println!("  - end_date: {:?}", e.end_date);
         println!("  - open_time: {:?}", e.open_time);
         println!("  - revenue: {:?}", e.revenue);
         println!("  - fee: {:?}", e.fee);
@@ -386,7 +397,8 @@ fn save_events_to_db(events: Vec<EventInfo>) -> Result<(), Box<dyn std::error::E
             r"INSERT INTO chess_event (date, open_time, revenue, fee)
               VALUES (:date, :open_time, :revenue, :fee)",
             params! {
-                "date" => event.date,
+                "start_date" => event.start_date,
+                "end_date" => event.end_date,
                 "open_time" => event.open_time,
                 "revenue" => event.revenue,
                 "fee" => event.fee,
