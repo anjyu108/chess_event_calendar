@@ -10,6 +10,7 @@ use unicode_normalization::UnicodeNormalization;
 const CHESS_CLUB_LIST: [&str; 3] = ["8x8_chess_club", "kitasenjyu", "JCF"];
 
 // TODO: add logger for debug
+// TODO: add unit test
 
 fn main() {
     println!("CHESS_CLUB_LIST: {:?}", CHESS_CLUB_LIST);
@@ -116,6 +117,7 @@ impl ChessEventScraper for EventScraperClub8x8 {
 impl EventScraperClub8x8 {
     fn naive_date_from_str(input: &str) -> NaiveDate {
         // input example: "2024年1月7日(日)"
+        // Return 1995-10-5 when failed to parase
 
         // normalize input as much as possible (e.g., Zenkaku)
         let input_nfkd = input.nfkd().collect::<String>();
@@ -221,6 +223,7 @@ impl ChessEventScraper for EventScraperKitasenjyu {
 impl EventScraperKitasenjyu {
     fn naive_date_from_str(input: &str) -> NaiveDate {
         // input example: "７／２７（土）"
+        // Return 1995-10-5 when failed to parase
 
         // normalize input as much as possible (e.g., Zenkaku)
         let input_nfkd = input.nfkd().collect::<String>();
@@ -260,7 +263,9 @@ impl ChessEventScraper for EventScraperJcf {
 
         let mut events = Vec::new();
         for article in scrape_target_list {
-            let mut date = NaiveDate::from_ymd_opt(0, 1, 1).unwrap();
+            // TODO: Fix hardcoded date initial value
+            let mut start_date = NaiveDate::from_ymd_opt(0, 1, 1).unwrap();
+            let mut end_date = NaiveDate::from_ymd_opt(0, 1, 2).unwrap();
             let mut name = String::from("");
             for paragraph in article.select(&paragraph_selector) {
                 let text = paragraph.text().collect::<Vec<_>>().join("");
@@ -270,13 +275,26 @@ impl ChessEventScraper for EventScraperJcf {
                     name = String::from(&text);
                 }
                 if attr_class == "gamedate" {
-                     let date_str = String::from(&text);
-                     date = EventScraperJcf::naive_date_from_str(&date_str);
+                    // text example: "2024/1/7(日)-1/8(月祝)", "2024/1/20(土)"
+                    let date_str = String::from(&text);
+                    // println!("date_str: {:?}", date_str);
+                    let date_split: Vec<&str> = date_str.split("-").collect();
+                    let start_date_str = date_split[0];
+                    start_date = EventScraperJcf::naive_date_from_str(&start_date_str, start_date);
+
+                    end_date = start_date;
+                    if date_split.len() > 1 {
+                        let end_date_str = date_split[1];
+                        // // NOTE: workaround for year not in end_date
+                        // let end_date_str = start_date.format("%Y/").to_string() + end_date_str;
+                        end_date = EventScraperJcf::naive_date_from_str(&end_date_str, start_date);
+                    }
                 }
             }
 
             // not or not well structured event
-            if date == NaiveDate::from_ymd_opt(0, 1, 1).unwrap() ||
+            if start_date == NaiveDate::from_ymd_opt(0, 1, 1).unwrap() ||
+                end_date == NaiveDate::from_ymd_opt(0, 1, 2).unwrap() ||
                name == "" {
                 continue;
             }
@@ -284,8 +302,6 @@ impl ChessEventScraper for EventScraperJcf {
             let open_time = "unknown".to_string();
             let revenue = "unknown".to_string();
             let fee = "unknown".to_string();
-            let start_date = date;
-            let end_date = date;
             let e = EventInfo {
                 name,
                 start_date,
@@ -302,31 +318,48 @@ impl ChessEventScraper for EventScraperJcf {
 }
 
 impl EventScraperJcf {
-    fn naive_date_from_str(input: &str) -> NaiveDate {
-        // input example: "2024/1/7(日)-1/8(月祝)", "2024/1/20(土)"
+    fn naive_date_from_str(input: &str, start_date: NaiveDate) -> NaiveDate {
+        // input example: "2024/1/20(土)", "1/8(月祝)"
+        // Return 1995-10-5 when failed to parase
+        // When either day, month, year is missing, use start_date
 
-        // TODO: consider two or more day
-
+        // println!("input: {:?}", input);
         // normalize input as much as possible (e.g., Zenkaku)
         let input_nfkd = input.nfkd().collect::<String>();
+        // println!("input_nfkd: {:?}", input_nfkd);
 
         let only_ymd = trim_left(&input_nfkd, Vec::from([String::from("(")]));
 
-        let slash_split_list: Vec<&str> = only_ymd.split("/").collect();
+        let mut slash_split_list: Vec<&str> = only_ymd.split("/").collect();
+        // slash_split_list should be either: (%d-%m-%Y), (%d-%m), (%d), ()
+        // println!("slash_split_list: {:?}", slash_split_list);
 
-        let year_str = slash_split_list[0];
-        let year_int: i32 = year_str.parse().unwrap_or(1995);
+        let day_str = match slash_split_list.pop() {
+            Some(val) => val.to_string(),
+            None => start_date.format("%d").to_string(),
+        };
+        let day_int: u32 = day_str.parse().unwrap_or(5);
+        // println!("day_str: {:?}", day_str);
 
-        let month_str = slash_split_list[1];
+
+        let month_str = match slash_split_list.pop() {
+            Some(val) => val.to_string(),
+            None => start_date.format("%m").to_string(),
+        };
         let month_int: u32 = month_str.parse().unwrap_or(10);
 
-        let day_str = slash_split_list[2];
-        let day_int: u32 = day_str.parse().unwrap_or(10);
+        let year_str = match slash_split_list.pop() {
+            Some(val) => val.to_string(),
+            None => start_date.format("%Y").to_string(),
+        };
+        let year_int: i32 = year_str.parse().unwrap_or(1995);
 
         let datetime = NaiveDate::from_ymd_opt(year_int, month_int, day_int);
 
         // FIXME don't use unwrap()
-        datetime.unwrap()
+        let ret = datetime.unwrap();
+        // println!("ret: {:?}", ret);
+        ret
     }
 }
 
