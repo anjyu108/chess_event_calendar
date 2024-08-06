@@ -271,6 +271,15 @@ impl ChessEventScraper for EventScraperJcf {
                 }
             }
 
+            // not or not well structured event
+            if date == "" ||
+               name == "" {
+                continue;
+            }
+
+            let naive_date = EventScraperJcf::naive_date_from_str(&date);
+            println!("JCF naive_date: {:?}", naive_date);
+
             let open_time = "unknown".to_string();
             let revenue = "unknown".to_string();
             let fee = "unknown".to_string();
@@ -285,6 +294,36 @@ impl ChessEventScraper for EventScraperJcf {
         }
 
         events
+    }
+}
+
+impl EventScraperJcf {
+    fn naive_date_from_str(input: &str) -> NaiveDate {
+        // input example: "2024/1/7(日)-1/8(月祝)", "2024/1/20(土)"
+
+        // TODO: consider two or more day
+
+        // normalize input as much as possible (e.g., Zenkaku)
+        let input_nfkd = input.nfkd().collect::<String>();
+        println!("input_nfkd: {:?}", input_nfkd);
+
+        let only_ymd = trim_left(&input_nfkd, Vec::from([String::from("(")]));
+
+        let slash_split_list: Vec<&str> = only_ymd.split("/").collect();
+
+        let year_str = slash_split_list[0];
+        let year_int: i32 = year_str.parse().unwrap_or(1995);
+
+        let month_str = slash_split_list[1];
+        let month_int: u32 = month_str.parse().unwrap_or(10);
+
+        let day_str = slash_split_list[2];
+        let day_int: u32 = day_str.parse().unwrap_or(10);
+
+        let datetime = NaiveDate::from_ymd_opt(year_int, month_int, day_int);
+
+        // FIXME don't use unwrap()
+        datetime.unwrap()
     }
 }
 
