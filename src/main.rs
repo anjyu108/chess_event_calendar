@@ -59,7 +59,7 @@ impl ChessEventScraper for EventScraperClub8x8 {
 
         let mut events = Vec::new();
         for article in scrape_target_list {
-            let mut date = String::from("");
+            let mut date = NaiveDate::from_ymd_opt(0, 1, 1).unwrap();
             let mut open_time = String::from("");
             let mut revenue = String::from("");
             let mut fee = String::from("");
@@ -71,11 +71,12 @@ impl ChessEventScraper for EventScraperClub8x8 {
                     revenue = String::from(text.trim().trim_start_matches("場所:").trim());
                 }
                 if text.contains("日時:") {
-                    date = String::from(text.trim().trim_start_matches("日時:").trim());
-                    date = trim_left(
-                        &date,
+                    let date_str = String::from(text.trim().trim_start_matches("日時:").trim());
+                    let date_str_trim = trim_left(
+                        &date_str,
                         Vec::from([String::from("(定員"), String::from("（定員")]),
                     );
+                    date = EventScraperClub8x8::naive_date_from_str(&date_str_trim);
                 }
                 if text.contains("参加費:") {
                     fee = String::from(text.trim().trim_start_matches("参加費:").trim());
@@ -87,15 +88,12 @@ impl ChessEventScraper for EventScraperClub8x8 {
             }
 
             // not or not well structured event
-            if date == "" ||
+            if date == NaiveDate::from_ymd_opt(0, 1, 1).unwrap() ||
                open_time == "" ||
                revenue == "" ||
                fee == "" {
                 continue;
             }
-
-            let naive_date = EventScraperClub8x8::naive_date_from_str(&date);
-            println!("8x8 naive_date: {:?}", naive_date);
 
             let name = "meeting".to_string();  // Assume all events are meeting
             let e = EventInfo {
@@ -143,7 +141,7 @@ impl EventScraperClub8x8 {
 
 pub struct EventInfo {
     name: String,
-    date: String,
+    date: NaiveDate,
     open_time: String,
     revenue: String,
     fee: String,
@@ -171,7 +169,7 @@ impl ChessEventScraper for EventScraperKitasenjyu {
                 continue;
             }
 
-            let mut date = String::from("");
+            let mut date = NaiveDate::from_ymd_opt(0, 1, 1).unwrap();
             let mut open_time = String::from("");
             let mut revenue = String::from("");
             let mut fee = String::from("");
@@ -183,22 +181,20 @@ impl ChessEventScraper for EventScraperKitasenjyu {
                 }
 
                 let infos: Vec<&str> = line.split("\u{3000}").collect();
-                date = infos[1].to_string();
+                let date_str = infos[1].to_string();
+                date = EventScraperKitasenjyu::naive_date_from_str(&date_str);
                 open_time = infos[2].to_string();
                 revenue = infos[3].to_string();
                 fee = "unknown".to_string()
             }
 
             // not or not well structured event
-            if date == "" ||
+            if date == NaiveDate::from_ymd_opt(0, 1, 1).unwrap() ||
                open_time == "" ||
                revenue == "" ||
                fee == "" {
                 continue;
             }
-
-            let naive_date = EventScraperKitasenjyu::naive_date_from_str(&date);
-            println!("Kitasenjyu naive_date: {:?}", naive_date);
 
             let name = "meeting".to_string();  // Assume all events are meeting
             let e = EventInfo {
@@ -257,7 +253,7 @@ impl ChessEventScraper for EventScraperJcf {
 
         let mut events = Vec::new();
         for article in scrape_target_list {
-            let mut date = String::from("");
+            let mut date = NaiveDate::from_ymd_opt(0, 1, 1).unwrap();
             let mut name = String::from("");
             for paragraph in article.select(&paragraph_selector) {
                 let text = paragraph.text().collect::<Vec<_>>().join("");
@@ -267,18 +263,16 @@ impl ChessEventScraper for EventScraperJcf {
                     name = String::from(&text);
                 }
                 if attr_class == "gamedate" {
-                     date = String::from(&text);
+                     let date_str = String::from(&text);
+                     date = EventScraperJcf::naive_date_from_str(&date_str);
                 }
             }
 
             // not or not well structured event
-            if date == "" ||
+            if date == NaiveDate::from_ymd_opt(0, 1, 1).unwrap() ||
                name == "" {
                 continue;
             }
-
-            let naive_date = EventScraperJcf::naive_date_from_str(&date);
-            println!("JCF naive_date: {:?}", naive_date);
 
             let open_time = "unknown".to_string();
             let revenue = "unknown".to_string();
@@ -305,7 +299,6 @@ impl EventScraperJcf {
 
         // normalize input as much as possible (e.g., Zenkaku)
         let input_nfkd = input.nfkd().collect::<String>();
-        println!("input_nfkd: {:?}", input_nfkd);
 
         let only_ymd = trim_left(&input_nfkd, Vec::from([String::from("(")]));
 
