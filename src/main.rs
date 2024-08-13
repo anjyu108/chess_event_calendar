@@ -7,6 +7,12 @@ use mysql::prelude::Queryable;
 
 use unicode_normalization::UnicodeNormalization;
 
+use serde::{Deserialize, Serialize};
+use serde_yaml;
+
+use std::fs::File;
+use std::io::BufReader;
+
 const CHESS_CLUB_LIST: [&str; 3] = ["8x8_chess_club", "kitasenjyu", "JCF"];
 
 // TODO: add logger for debug
@@ -145,7 +151,7 @@ impl EventScraperClub8x8 {
     }
 }
 
-
+#[derive(Serialize, Deserialize, Debug)]
 pub struct EventInfo {
     name: String,
     organizer: String,
@@ -464,4 +470,14 @@ fn save_events_to_db(events: &Vec<EventInfo>) -> Result<(), &'static str> {
         };
     }
     Ok(())
+}
+
+fn fileoutput_event_list(title: &str, events: &Vec<EventInfo>, filepath: &str) {
+    for e in events {
+        let yaml_string = serde_yaml::to_string(&e).unwrap();
+
+        println!("event yaml:");
+        println!("{:?}", yaml_string);
+    }
+    println!("");
 }
